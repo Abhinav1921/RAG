@@ -3,7 +3,7 @@ name = "poc-mcp"
 version = "0.1.0"
 description = "Document Analysis MCP Server for document semantic search and Q&A"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "pymongo",
     "langchain",

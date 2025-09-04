@@ -199,7 +199,7 @@ if prompt := st.chat_input("Ask a question about your documents..."):
                 
                 if result and result.answer:
                     answer = result.answer
-                    retrieved_chunks = [chunk.dict() for chunk in result.retrieved_chunks]
+                    retrieved_chunks = [chunk.model_dump() for chunk in result.retrieved_chunks]
                     source_documents = result.source_documents
 
                     st.markdown(answer)

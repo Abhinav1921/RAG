@@ -18,10 +18,24 @@ from langchain_core.prompts import PromptTemplate
 import asyncio
 import concurrent.futures
 
-# --- Initialize Services ONCE (Global instances for the MCP server) ---
-embedding_service_instance = EmbeddingService()
-document_mongodb_service_instance = DocumentMongoDBService(embedding_service_instance)
-document_processing_service_instance = DocumentProcessingService()
+# --- Global service instances (lazy-loaded) ---
+embedding_service_instance = None
+document_mongodb_service_instance = None
+document_processing_service_instance = None
+
+def get_services():
+    """Lazy-load services to avoid environment variable issues at import time"""
+    global embedding_service_instance, document_mongodb_service_instance, document_processing_service_instance
+    
+    if embedding_service_instance is None:
+        from dotenv import load_dotenv
+        load_dotenv()  # Ensure environment variables are loaded
+        
+        embedding_service_instance = EmbeddingService()
+        document_mongodb_service_instance = DocumentMongoDBService(embedding_service_instance)
+        document_processing_service_instance = DocumentProcessingService()
+    
+    return embedding_service_instance, document_mongodb_service_instance, document_processing_service_instance
 
 # --- Create FastMCP Server ---
 app = FastMCP("Document Analysis MCP Server")
@@ -77,8 +91,11 @@ async def upload_and_process_document(file_path: str, chunk_size: int = 1000, ov
     print(f"Processing document: {file_path}")
     
     try:
+        # Get lazy-loaded services
+        embedding_service, mongodb_service, processing_service = get_services()
+        
         # Process the document
-        document_id, document_name, chunks = await document_processing_service_instance.process_document(
+        document_id, document_name, chunks = await processing_service.process_document(
             file_path, chunk_size, overlap
         )
         
@@ -87,10 +104,10 @@ async def upload_and_process_document(file_path: str, chunk_size: int = 1000, ov
         # Generate embeddings and store chunks
         for i, chunk in enumerate(chunks):
             print(f"Processing chunk {i+1}/{len(chunks)}")
-            chunk['embedding'] = await embedding_service_instance.get_embedding(chunk['text_content'])
+            chunk['embedding'] = await embedding_service.get_embedding(chunk['text_content'])
         
         # Store chunks in database
-        await document_mongodb_service_instance.insert_document_chunks_batch(chunks)
+        await mongodb_service.insert_document_chunks_batch(chunks)
         
         return {
             "success": True,
@@ -127,8 +144,11 @@ async def search_documents(query_text: str, document_id: Optional[str] = None, l
     if document_id:
         print(f"Filtering by document_id: {document_id}")
     
+    # Get lazy-loaded services
+    embedding_service, mongodb_service, processing_service = get_services()
+    
     # Perform semantic search
-    retrieved_docs_raw = await document_mongodb_service_instance.find_chunks_by_semantic_search(
+    retrieved_docs_raw = await mongodb_service.find_chunks_by_semantic_search(
         query_text=query_text,
         document_id=document_id,
         limit=limit
@@ -182,7 +202,7 @@ Answer:"""
         
         return {
             "answer": generated_answer,
-            "retrieved_chunks": [chunk.dict() for chunk in retrieved_chunks_models],
+            "retrieved_chunks": [chunk.model_dump() for chunk in retrieved_chunks_models],
             "source_documents": source_documents
         }
         
@@ -190,7 +210,7 @@ Answer:"""
         print(f"Error during LLM generation: {e}")
         return {
             "answer": f"An error occurred while generating the answer: {str(e)}",
-            "retrieved_chunks": [chunk.dict() for chunk in retrieved_chunks_models],
+            "retrieved_chunks": [chunk.model_dump() for chunk in retrieved_chunks_models],
             "source_documents": source_documents
         }
 
@@ -205,7 +225,10 @@ async def list_documents() -> dict:
     print("Retrieving documents list...")
     
     try:
-        documents = await document_mongodb_service_instance.get_documents_list()
+        # Get lazy-loaded services
+        embedding_service, mongodb_service, processing_service = get_services()
+        
+        documents = await mongodb_service.get_documents_list()
         
         document_list = []
         for doc in documents:
@@ -246,7 +269,10 @@ async def delete_document(document_id: str) -> dict:
     print(f"Deleting document: {document_id}")
     
     try:
-        deleted_count = await document_mongodb_service_instance.delete_document(document_id)
+        # Get lazy-loaded services
+        embedding_service, mongodb_service, processing_service = get_services()
+        
+        deleted_count = await mongodb_service.delete_document(document_id)
         
         if deleted_count > 0:
             return {
