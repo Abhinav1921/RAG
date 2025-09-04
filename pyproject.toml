@@ -1,0 +1,25 @@
+[project]
+name = "poc-mcp"
+version = "0.1.0"
+description = "Document Analysis MCP Server for document semantic search and Q&A"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pymongo",
+    "langchain",
+    "langchain-google-genai", 
+    "langchain-community",
+    "python-dotenv",
+    "beanie",
+    "pydantic",
+    "google-generativeai",
+    "mcp[cli]==0.1.0",
+    "streamlit",
+    "requests",
+    "motor",
+    "PyPDF2",
+    "python-docx"
+]
+
+[project.scripts]
+mcp-server = "main:server"
