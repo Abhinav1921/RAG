@@ -46,7 +46,7 @@ def run_mcp_server():
 
 if __name__ == "__main__":
     # Check if we're in a web deployment environment
-    if os.environ.get("PORT") or os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER"):
+    if os.environ.get("PORT") or os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER") or os.environ.get("RENDER_SERVICE_NAME"):
         # Web deployment - run Streamlit
         print("Detected web deployment environment - starting Streamlit app")
         run_streamlit_app()
