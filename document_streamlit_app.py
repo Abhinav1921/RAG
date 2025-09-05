@@ -29,7 +29,12 @@ from MCP.tools.document_tools import (
     search_documents_sync,
     list_documents_sync
 )
-from database.connection import connect_db
+# Import both connection methods
+try:
+    from database.cloud_connection import connect_db_cloud_safe as connect_db
+    from database.cloud_connection import get_database
+except ImportError:
+    from database.connection import connect_db, get_database
 from database.models.document_chunk_model import DocumentChunk
 
 st.set_page_config(
@@ -56,7 +61,27 @@ def init_database():
             # Don't close the loop here as it might be needed later
             pass
     except Exception as e:
-        st.error(f"Database connection failed: {e}")
+        error_msg = str(e)
+        st.error(f"Database connection failed: {error_msg}")
+        
+        # Provide specific help for SSL issues
+        if "ssl" in error_msg.lower() or "tls" in error_msg.lower():
+            st.error("🔧 SSL/TLS Connection Issue Detected!")
+            st.info("""
+            **This is a common issue with cloud deployments. Here's how to fix it:**
+            
+            1. **Check MongoDB Atlas Settings:**
+               - Go to Network Access → Add IP Address → Allow Access from Anywhere (0.0.0.0/0)
+               - Verify your cluster is running (not paused)
+            
+            2. **Connection String Format:**
+               - Make sure it starts with `mongodb+srv://`
+               - Verify username and password are correct
+            
+            3. **Try Restarting the App:**
+               - Sometimes a simple restart fixes SSL handshake issues
+            """)
+            
         return False
 
 # Initialize DB

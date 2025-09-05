@@ -45,10 +45,27 @@ async def connect_db(document_models: List[Type[Document]]):
             "retryReads": True,
         }
         
-        # Add SSL configuration for Atlas
+        # Add SSL configuration for Atlas (with Streamlit Cloud compatibility)
         if is_atlas:
-            client_options["tls"] = True
-            client_options["tlsCAFile"] = certifi.where()
+            # Try different SSL configurations for cloud environments
+            try:
+                import ssl
+                client_options["tls"] = True
+                client_options["tlsCAFile"] = certifi.where()
+                
+                # For cloud environments like Streamlit Cloud
+                if environment == "production":
+                    # More permissive SSL for cloud deployment issues
+                    client_options["tlsInsecure"] = True
+                else:
+                    # Strict SSL for development
+                    client_options["tlsAllowInvalidCertificates"] = False
+                    client_options["tlsAllowInvalidHostnames"] = False
+                    
+            except Exception as ssl_error:
+                print(f"SSL configuration warning: {ssl_error}")
+                # Fallback to basic TLS
+                client_options["tls"] = True
         
         # Create MongoDB client with enhanced options
         _client = AsyncIOMotorClient(mongo_uri, **client_options)

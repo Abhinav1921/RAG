@@ -58,8 +58,11 @@ class DocumentMongoDBService:
         print("Executing vector search pipeline...")
         
         try:
-            # Get database and collection directly
-            from database.connection import get_database
+            # Get database and collection directly (cloud-safe)
+            try:
+                from database.cloud_connection import get_database
+            except ImportError:
+                from database.connection import get_database
             db = get_database()
             collection = db[self.collection_name]
             
@@ -142,7 +145,11 @@ class DocumentMongoDBService:
     async def get_documents_list(self) -> List[Dict[str, Any]]:
         """Get a list of all unique documents in the database."""
         try:
-            from database.connection import get_database
+            # Use cloud-safe database getter
+            try:
+                from database.cloud_connection import get_database
+            except ImportError:
+                from database.connection import get_database
             db = get_database()
             collection = db[self.collection_name]
             
