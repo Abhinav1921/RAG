@@ -33,10 +33,11 @@ async def connect_db_cloud_safe(document_models: List[Type[Document]]):
     print(f"🔧 Attempting cloud-safe MongoDB connection...")
     print(f"Environment: {environment}")
     
-    # Multiple connection strategies to try
+    # Multiple connection strategies to try (ordered from most to least secure)
     connection_strategies = [
         ("Standard SSL", get_standard_ssl_options),
         ("Relaxed SSL", get_relaxed_ssl_options),
+        ("Streamlit Cloud Special", get_streamlit_cloud_options),
         ("Minimal SSL", get_minimal_ssl_options),
         ("Basic Connection", get_basic_options)
     ]
@@ -136,13 +137,33 @@ def get_minimal_ssl_options():
     }
 
 def get_basic_options():
-    """Most basic connection options."""
+    """Most basic connection options - SSL disabled for cloud compatibility."""
     return {
         "serverSelectionTimeoutMS": 30000,
         "connectTimeoutMS": 30000,
         "socketTimeoutMS": 30000,
         "maxPoolSize": 1,
         "retryWrites": True,
+        "tls": False,  # Completely disable SSL as last resort
+        "ssl": False,
+    }
+
+def get_streamlit_cloud_options():
+    """Special configuration for Streamlit Cloud SSL issues."""
+    return {
+        "serverSelectionTimeoutMS": 45000,
+        "connectTimeoutMS": 45000,
+        "socketTimeoutMS": 45000,
+        "maxPoolSize": 1,
+        "minPoolSize": 0,
+        "retryWrites": True,
+        "retryReads": False,
+        "directConnection": False,
+        "tlsInsecure": True,
+        "tlsAllowInvalidCertificates": True,
+        "tlsAllowInvalidHostnames": True,
+        "authSource": "admin",
+        "ssl_cert_reqs": 0,  # ssl.CERT_NONE equivalent
     }
 
 def get_database():
