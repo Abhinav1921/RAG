@@ -35,6 +35,7 @@ async def connect_db_cloud_safe(document_models: List[Type[Document]]):
     
     # Multiple connection strategies to try (ordered from most to least secure)
     connection_strategies = [
+        ("Render Optimized", get_render_optimized_options),
         ("Standard SSL", get_standard_ssl_options),
         ("Relaxed SSL", get_relaxed_ssl_options),
         ("Streamlit Cloud Special", get_streamlit_cloud_options),
@@ -52,8 +53,9 @@ async def connect_db_cloud_safe(document_models: List[Type[Document]]):
             _client = AsyncIOMotorClient(mongo_uri, **client_options)
             _database = _client[mongo_db]
             
-            # Test the connection with a short timeout
-            await asyncio.wait_for(_client.admin.command('hello'), timeout=15.0)
+            # Test the connection with appropriate timeout for Render
+            timeout = 45.0 if os.getenv("RENDER") or os.getenv("RENDER_SERVICE_NAME") else 15.0
+            await asyncio.wait_for(_client.admin.command('hello'), timeout=timeout)
             
             # Initialize Beanie
             await init_beanie(database=_database, document_models=document_models)
@@ -91,6 +93,25 @@ async def connect_db_cloud_safe(document_models: List[Type[Document]]):
     print("4. Try restarting the Streamlit app")
     
     raise Exception(f"Could not connect to MongoDB Atlas. Last error: {last_error}")
+
+def get_render_optimized_options():
+    """Render platform optimized configuration."""
+    return {
+        "serverSelectionTimeoutMS": 30000,  # Longer timeout for Render cold starts
+        "connectTimeoutMS": 30000,
+        "socketTimeoutMS": 30000,
+        "maxPoolSize": 10,
+        "minPoolSize": 2,
+        "maxIdleTimeMS": 30000,
+        "retryWrites": True,
+        "retryReads": True,
+        "heartbeatFrequencyMS": 10000,  # More frequent heartbeats
+        "serverSelectionRetryDelayMS": 200,
+        # Render-specific optimizations
+        "compressors": "snappy,zlib",
+        "readConcern": "local",
+        "writeConcern": {"w": "majority", "wtimeout": 10000},
+    }
 
 def get_standard_ssl_options():
     """Standard SSL configuration - most secure."""

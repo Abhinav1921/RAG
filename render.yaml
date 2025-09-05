@@ -3,7 +3,7 @@ services:
     name: document-analysis-mcp
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: python start_render.py
     envVars:
       - key: MONGODB_CONNECTION_STRING
         sync: false
