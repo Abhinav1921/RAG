@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: document-analysis-mcp
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run document_streamlit_app.py --server.port=$PORT --server.address=0.0.0.0
+    envVars:
+      - key: MONGODB_CONNECTION_STRING
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false  
+      - key: DATABASE_NAME
+        value: document_analysis
+      - key: COLLECTION_NAME
+        value: document_chunks
+      - key: VECTOR_INDEX_NAME
+        value: vector_index
+      - key: ENVIRONMENT
+        value: production

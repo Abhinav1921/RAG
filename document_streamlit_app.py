@@ -7,8 +7,18 @@ from dotenv import load_dotenv
 from pathlib import Path
 import tempfile
 
-# Load environment variables
-load_dotenv()
+# Load environment variables (fallback to .env for local development)
+try:
+    # Try to use Streamlit secrets first (for cloud deployment)
+    if hasattr(st, 'secrets') and st.secrets:
+        for key, value in st.secrets["secrets"].items():
+            os.environ[key] = str(value)
+    else:
+        # Fallback to .env file for local development
+        load_dotenv()
+except Exception:
+    # Fallback to .env file if secrets are not available
+    load_dotenv()
 
 # Add the project root to Python path
 sys.path.append(os.path.dirname(__file__))

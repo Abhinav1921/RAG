@@ -7,7 +7,7 @@ import os
 from mcp.server.fastmcp import FastMCP
 
 from services.document_mongodb_service import DocumentMongoDBService
-from services.embedding_service import EmbeddingService
+from services.alternative_embedding_service import AlternativeEmbeddingService as EmbeddingService
 from services.document_processing_service import DocumentProcessingService
 from database.connection import connect_db
 from database.models.document_chunk_model import DocumentChunk
@@ -104,10 +104,20 @@ async def upload_and_process_document(file_path: str, chunk_size: int = 1000, ov
         # Generate embeddings and store chunks
         for i, chunk in enumerate(chunks):
             print(f"Processing chunk {i+1}/{len(chunks)}")
-            chunk['embedding'] = await embedding_service.get_embedding(chunk['text_content'])
+            try:
+                chunk['embedding'] = await embedding_service.get_embedding(chunk['text_content'])
+                print(f"Successfully generated embedding for chunk {i+1}")
+            except Exception as embed_error:
+                print(f"Error generating embedding for chunk {i+1}: {embed_error}")
+                raise
         
         # Store chunks in database
-        await mongodb_service.insert_document_chunks_batch(chunks)
+        try:
+            await mongodb_service.insert_document_chunks_batch(chunks)
+            print(f"Successfully stored {len(chunks)} chunks in database")
+        except Exception as db_error:
+            print(f"Error storing chunks in database: {db_error}")
+            raise
         
         return {
             "success": True,

@@ -12,3 +12,5 @@ requests
 motor
 PyPDF2
 python-docx
+tenacity
+certifi

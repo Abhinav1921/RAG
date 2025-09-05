@@ -1,6 +1,6 @@
 # services/document_mongodb_service.py
 from database.models.document_chunk_model import DocumentChunk
-from services.embedding_service import EmbeddingService
+from services.alternative_embedding_service import AlternativeEmbeddingService as EmbeddingService
 from typing import List, Dict, Any, Optional
 import os
 from datetime import datetime

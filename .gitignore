@@ -10,3 +10,7 @@ wheels/
 venv/
 __pycache__/
 *.pyc
+
+# Streamlit Secrets (IMPORTANT: Never commit these!)
+.streamlit/secrets.toml
+

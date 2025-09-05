@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - COLLECTION_NAME=${COLLECTION_NAME}
+      - VECTOR_INDEX_NAME=${VECTOR_INDEX_NAME}
+      - ENVIRONMENT=production
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./logs:/app/logs  # Mount logs directory
+    
+  # Optional: Streamlit app service
+  streamlit-app:
+    build: .
+    command: ["streamlit", "run", "document_streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    environment:
+      - MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - COLLECTION_NAME=${COLLECTION_NAME}
+      - VECTOR_INDEX_NAME=${VECTOR_INDEX_NAME}
+      - ENVIRONMENT=production
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      - mcp-server
